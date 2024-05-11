@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "680814345970",
+    "project_id": "tde2-ucs-disp-moveis",
+    "storage_bucket": "tde2-ucs-disp-moveis.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:680814345970:android:4ab112ebab332137be9a6b",
+        "android_client_info": {
+          "package_name": "com.tde2"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBvU76AqVBHbnjzla5jaqoNqO0XVERC9XY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
