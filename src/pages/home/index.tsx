@@ -1,21 +1,33 @@
-import React, {useEffect} from 'react';
-import {Text, TouchableOpacity, View} from 'react-native';
+import React, {useEffect, useState} from 'react';
+import {
+  Modal,
+  Text,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
+} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import firestore from '@react-native-firebase/firestore';
 import {useUser} from '../../contexts/userContext';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {NavigationProps} from '../../routes';
+import WaModal from '../../components/WaModal';
+import {WaTextInput} from '../../components/WaTextInput';
+import {WaButton} from '../../components/WaButton';
 
 export const Home: React.FC<NavigationProps> = ({navigation}) => {
   const {user, authenticated, logout} = useUser();
+  const [isNewConversionModalOpen, setIsNewConversionModalOpen] =
+    useState(false);
 
   useEffect(() => {
+    if (!authenticated || !user) return;
     console.log('user, authenticated: ', user, authenticated);
-    const a = async () => {
+    const loadMessages = async () => {
       await new Promise(resolve => setTimeout(resolve, 1000));
       const messages = firestore()
         .collection('Messages')
-        .where('userId', '==', '1')
+        .where('userId', '==', user.user.uid)
         .get()
         .catch(a => console.log('a: ', a))
         .then(querySnapshot => {
@@ -23,12 +35,16 @@ export const Home: React.FC<NavigationProps> = ({navigation}) => {
         });
       console.log('messages: ', messages);
     };
-    a();
-  }, []);
+    loadMessages();
+  }, [authenticated]);
 
   const handleLogout = () => {
     logout();
     navigation.navigate('Login');
+  };
+
+  const handleNewMessage = () => {
+    setIsNewConversionModalOpen(true);
   };
 
   return (
@@ -43,12 +59,34 @@ export const Home: React.FC<NavigationProps> = ({navigation}) => {
         </TouchableOpacity>
       </View>
 
-      <View className="absolute bottom-20 left-0 right-0 items-center justify-around p-4">
+      <View className="absolute bottom-4 right-4 rounded-full bg-teal-green">
+        <TouchableOpacity onPress={handleNewMessage} className="p-4">
+          <MaterialCommunityIcons
+            name="message-plus-outline"
+            size={25}
+            color="#fff"
+          />
+        </TouchableOpacity>
+      </View>
+
+      <WaModal
+        show={isNewConversionModalOpen}
+        onDimiss={() => setIsNewConversionModalOpen(false)}>
+        <View className="bg-background p-4 rounded-xl">
+          <Text className="text-xl font-bold">Nova conversa:</Text>
+          <WaTextInput className="mt-2 mb-4" placeholder="E-mail do usuário" />
+          <View className="flex items-end">
+            <WaButton text="Iniciar conversa" variant="contained" />
+          </View>
+        </View>
+      </WaModal>
+
+      {/* <View className="absolute bottom-20 left-0 right-0 items-center justify-around p-4">
         <TouchableOpacity>
           <Text>TEste</Text>
         </TouchableOpacity>
         <TouchableOpacity></TouchableOpacity>
-      </View>
+      </View> */}
     </SafeAreaView>
   );
 };

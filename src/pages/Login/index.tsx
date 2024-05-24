@@ -68,6 +68,7 @@ const Login: React.FC<NavigationProps> = ({navigation}) => {
       const user = await firebase
         .auth()
         .signInWithEmailAndPassword(username, password);
+      console.log('user: ', user);
       setUser(user);
     } catch (e) {
       Alert.alert('Erro', String(e));
@@ -111,6 +112,7 @@ const Login: React.FC<NavigationProps> = ({navigation}) => {
               <WaTextInput
                 {...field}
                 placeholder="Usuário"
+                placeholderTextColor="#145b54"
                 onChangeText={handleCheckIfFieldsAreFilled(field.onChange)}
                 error={!!errors.username}
                 helperText={errors?.username?.message}
@@ -125,6 +127,7 @@ const Login: React.FC<NavigationProps> = ({navigation}) => {
               <WaTextInput
                 {...field}
                 placeholder="Senha"
+                placeholderTextColor="#145b54"
                 className="mt-2"
                 secureTextEntry={!isPasswordVisible}
                 onChangeText={handleCheckIfFieldsAreFilled(field.onChange)}

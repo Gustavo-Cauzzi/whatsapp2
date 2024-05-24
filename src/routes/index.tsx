@@ -3,9 +3,9 @@ import {
   NativeStackScreenProps,
   createNativeStackNavigator,
 } from '@react-navigation/native-stack';
-import {Home} from '../pages/home';
-import {Text, View} from 'react-native';
+import {View} from 'react-native';
 import Login from '../pages/Login';
+import {Home} from '../pages/home';
 
 export type NavigationProps = NativeStackScreenProps<any, 'Home', 'MyStack'>;
 
