@@ -1,8 +1,13 @@
 import {NavigationContainer} from '@react-navigation/native';
-import {createNativeStackNavigator} from '@react-navigation/native-stack';
+import {
+  NativeStackScreenProps,
+  createNativeStackNavigator,
+} from '@react-navigation/native-stack';
 import {Home} from '../pages/home';
 import {Text, View} from 'react-native';
 import Login from '../pages/Login';
+
+export type NavigationProps = NativeStackScreenProps<any, 'Home', 'MyStack'>;
 
 export const Routes = () => {
   const Stack = createNativeStackNavigator();

@@ -1,34 +1,56 @@
-import React, {useState} from 'react';
-import auth, {firebase} from '@react-native-firebase/auth';
+import {yupResolver} from '@hookform/resolvers/yup';
+import {firebase} from '@react-native-firebase/auth';
+import React, {useEffect, useState} from 'react';
+import {Controller, useForm} from 'react-hook-form';
 import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Text,
-  TextInput,
-  TouchableNativeFeedback,
   TouchableOpacity,
   View,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/FontAwesome';
 import FeatherIcon from 'react-native-vector-icons/Feather';
-import {WaTextInput} from '../../components/WaTextInput';
-import {Button} from 'react-native';
+import Icon from 'react-native-vector-icons/FontAwesome';
+import {object, string} from 'yup';
 import {WaButton} from '../../components/WaButton';
-import {Controller, useForm} from 'react-hook-form';
+import {WaTextInput} from '../../components/WaTextInput';
+import {loadLastLoggedUser, useUser} from '../../contexts/userContext';
+import {NavigationProps} from '../../routes';
 
-// import { Container } from './styles';
+const schema = object({
+  username: string().required('Informe um usuário'),
+  password: string()
+    .required('Informe uma senha')
+    .min(6, 'No mínimo 6 caracteres'),
+});
 
-const Login: React.FC = () => {
+const Login: React.FC<NavigationProps> = ({navigation}) => {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isActionsEnabled, setIsActionsEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const {setUser, authenticated} = useUser();
+  const [isAuthLoading, setIsAuthLoading] = useState(authenticated);
 
-  const {control, getValues, watch} = useForm({
+  useEffect(() => {
+    if (authenticated) {
+      navigation.navigate('Home');
+      return;
+    }
+    loadLastLoggedUser().then(() => setIsAuthLoading(false));
+  }, [authenticated]);
+
+  const {
+    control,
+    getValues,
+    handleSubmit,
+    formState: {errors},
+  } = useForm({
     defaultValues: {
       username: '',
       password: '',
     },
+    resolver: yupResolver(schema),
   });
 
   const handleCheckIfFieldsAreFilled =
@@ -43,7 +65,10 @@ const Login: React.FC = () => {
     setIsLoading(true);
     const {username, password} = getValues();
     try {
-      // await firebase.auth().createUserWithEmailAndPassword(username, password);
+      const user = await firebase
+        .auth()
+        .signInWithEmailAndPassword(username, password);
+      setUser(user);
     } catch (e) {
       Alert.alert('Erro', String(e));
     }
@@ -55,7 +80,10 @@ const Login: React.FC = () => {
     setIsLoading(true);
     const {username, password} = getValues();
     try {
-      await firebase.auth().createUserWithEmailAndPassword(username, password);
+      const user = await firebase
+        .auth()
+        .createUserWithEmailAndPassword(username, password);
+      setUser(user);
     } catch (e) {
       Alert.alert('Erro', String(e));
     }
@@ -82,9 +110,10 @@ const Login: React.FC = () => {
             render={({field}) => (
               <WaTextInput
                 {...field}
-                className="mb-2"
                 placeholder="Usuário"
                 onChangeText={handleCheckIfFieldsAreFilled(field.onChange)}
+                error={!!errors.username}
+                helperText={errors?.username?.message}
               />
             )}
           />
@@ -96,8 +125,11 @@ const Login: React.FC = () => {
               <WaTextInput
                 {...field}
                 placeholder="Senha"
-                secureTextEntry
+                className="mt-2"
+                secureTextEntry={!isPasswordVisible}
                 onChangeText={handleCheckIfFieldsAreFilled(field.onChange)}
+                error={!!errors.password}
+                helperText={errors?.password?.message}
                 endAdornment={
                   <TouchableOpacity
                     onPress={() => setIsPasswordVisible(!isPasswordVisible)}>
@@ -120,20 +152,18 @@ const Login: React.FC = () => {
             <>
               <WaButton
                 text="Login"
-                variant={isActionsEnabled ? 'contained' : 'outlined'}
+                variant="contained"
                 size="large"
                 className="mt-4"
-                disabled={!isActionsEnabled}
-                onPress={handleLogIn}>
+                onPress={handleSubmit(handleLogIn)}>
                 {isLoading && <ActivityIndicator />}
               </WaButton>
               <WaButton
                 text="Cadastrar"
-                variant={isActionsEnabled ? 'outlined' : 'text'}
+                variant="outlined"
                 size="large"
                 className="mt-2"
-                disabled={!isActionsEnabled}
-                onPress={handleSignIn}>
+                onPress={handleSubmit(handleSignIn)}>
                 {isLoading && <ActivityIndicator />}
               </WaButton>
             </>
