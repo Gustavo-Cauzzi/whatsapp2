@@ -2,7 +2,7 @@ import {ReactNode, useState} from 'react';
 import {Text, TextInput, TextInputProps, View, ViewProps} from 'react-native';
 
 interface IWaTextInput extends Partial<TextInputProps> {
-  containerProps?: ViewProps;
+  inputContainerProps?: ViewProps;
   inputClassName?: string;
   endAdornment?: ReactNode;
   error?: boolean;
@@ -10,8 +10,8 @@ interface IWaTextInput extends Partial<TextInputProps> {
 }
 
 export const WaTextInput: React.FC<IWaTextInput> = ({
-  containerProps,
   className,
+  inputContainerProps,
   inputClassName,
   endAdornment,
   error,
@@ -26,12 +26,10 @@ export const WaTextInput: React.FC<IWaTextInput> = ({
   const actualBorderColor = error ? 'border-red-800' : normalBorderColor;
 
   return (
-    <View>
+    <View className={className ?? ''}>
       <View
-        {...containerProps}
-        className={`flex-row items-center justify-between px-2 bg-background-950 rounded-xl min-w-[150px] ${actualBorderColor} border-2 ${
-          containerProps?.className ?? className
-        }`}>
+        {...inputContainerProps}
+        className={`flex-row items-center justify-between px-2 bg-background-950 rounded-xl min-w-[150px] ${actualBorderColor} border-2 ${inputContainerProps?.className}`}>
         <TextInput
           className={`py-2 flex-1 ${inputClassName}`}
           {...props}

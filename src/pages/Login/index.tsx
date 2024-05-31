@@ -16,10 +16,11 @@ import {object, string} from 'yup';
 import {WaButton} from '../../components/WaButton';
 import {WaTextInput} from '../../components/WaTextInput';
 import {loadLastLoggedUser, useUser} from '../../contexts/userContext';
+import {useWaNavigation} from '../../routes/nao_rolou/stackNavigatorBuilder';
 import {NavigationProps} from '../../routes';
 
 const schema = object({
-  username: string().required('Informe um usuário'),
+  email: string().required('Informe um usuário'),
   password: string()
     .required('Informe uma senha')
     .min(6, 'No mínimo 6 caracteres'),
@@ -29,7 +30,7 @@ const Login: React.FC<NavigationProps> = ({navigation}) => {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isActionsEnabled, setIsActionsEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const {setUser, authenticated} = useUser();
+  const {setUser, authenticated, signUp} = useUser();
   const [isAuthLoading, setIsAuthLoading] = useState(authenticated);
 
   useEffect(() => {
@@ -47,7 +48,7 @@ const Login: React.FC<NavigationProps> = ({navigation}) => {
     formState: {errors},
   } = useForm({
     defaultValues: {
-      username: '',
+      email: '',
       password: '',
     },
     resolver: yupResolver(schema),
@@ -56,19 +57,18 @@ const Login: React.FC<NavigationProps> = ({navigation}) => {
   const handleCheckIfFieldsAreFilled =
     (onChange: (text: string) => any) => (text: string) => {
       onChange(text);
-      const {password, username} = getValues();
-      setIsActionsEnabled(!!(password && username));
+      const {password, email} = getValues();
+      setIsActionsEnabled(!!(password && email));
     };
 
   const handleLogIn = async () => {
     if (isLoading) return;
     setIsLoading(true);
-    const {username, password} = getValues();
+    const {email, password} = getValues();
     try {
-      const user = await firebase
+      const {user} = await firebase
         .auth()
-        .signInWithEmailAndPassword(username, password);
-      console.log('user: ', user);
+        .signInWithEmailAndPassword(email, password);
       setUser(user);
     } catch (e) {
       Alert.alert('Erro', String(e));
@@ -79,12 +79,9 @@ const Login: React.FC<NavigationProps> = ({navigation}) => {
   const handleSignIn = async () => {
     if (isLoading) return;
     setIsLoading(true);
-    const {username, password} = getValues();
+    const {email, password} = getValues();
     try {
-      const user = await firebase
-        .auth()
-        .createUserWithEmailAndPassword(username, password);
-      setUser(user);
+      await signUp({email, password});
     } catch (e) {
       Alert.alert('Erro', String(e));
     }
@@ -107,15 +104,15 @@ const Login: React.FC<NavigationProps> = ({navigation}) => {
         <KeyboardAvoidingView className="max-w-[260px] w-full flex-[0.7] mt-8">
           <Controller
             control={control}
-            name="username"
-            render={({field}) => (
+            name="email"
+            render={({field: {ref, ...field}}) => (
               <WaTextInput
                 {...field}
                 placeholder="Usuário"
                 placeholderTextColor="#145b54"
                 onChangeText={handleCheckIfFieldsAreFilled(field.onChange)}
-                error={!!errors.username}
-                helperText={errors?.username?.message}
+                error={!!errors.email}
+                helperText={errors?.email?.message}
               />
             )}
           />
@@ -123,7 +120,7 @@ const Login: React.FC<NavigationProps> = ({navigation}) => {
           <Controller
             control={control}
             name="password"
-            render={({field}) => (
+            render={({field: {ref, ...field}}) => (
               <WaTextInput
                 {...field}
                 placeholder="Senha"
