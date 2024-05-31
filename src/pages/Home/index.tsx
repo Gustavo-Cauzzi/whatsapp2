@@ -17,7 +17,7 @@ import {object, string} from 'yup';
 import {WaButton} from '../../components/WaButton';
 import WaModal from '../../components/WaModal';
 import {WaTextInput} from '../../components/WaTextInput';
-import {WaChat, userChats as useChats} from '../../contexts/chatsContext';
+import {WaChat, useChats} from '../../contexts/chatsContext';
 import {useUser} from '../../contexts/userContext';
 import {NavigationProps} from '../../routes';
 
@@ -72,7 +72,7 @@ export const Home: React.FC<NavigationProps> = ({navigation}) => {
   };
 
   const handleGoToChat = (chat: WaChat) => {
-    navigation.navigate('Chat', {chat});
+    navigation.navigate('Chat', {chatId: chat.chatId});
   };
 
   return (
@@ -132,7 +132,7 @@ export const Home: React.FC<NavigationProps> = ({navigation}) => {
 
       <View>
         <FlatList
-          data={chats}
+          data={Object.values(chats)}
           keyExtractor={chat => chat.chatId}
           ListEmptyComponent={() => (
             <View className="flex-1 py-4 items-center">

@@ -20,23 +20,25 @@ export interface WaChat extends Chat {
 }
 
 interface UserContext {
-  chats: WaChat[];
+  chats: Record<string, WaChat>;
   isLoading: boolean;
   createChat: (otherUserEmail: string) => Promise<WaChat>;
   loadChats: () => any;
 }
 
-export const userChats = create<UserContext>(set => ({
-  chats: [],
+export const useChats = create<UserContext>(set => ({
+  chats: {},
   isLoading: false,
   async createChat(otherUserEmail: string) {
     const {user} = useUser.getState();
-    const {chats} = userChats.getState();
+    const {chats} = useChats.getState();
 
     if (!user) throw new Error('Usuário não está logado');
     if (user.email === otherUserEmail)
       throw new Error('Não é possível criar um chat com você mesmo');
-    if (chats.some(chat => chat.otherUser.email === otherUserEmail))
+    if (
+      Object.values(chats).some(chat => chat.otherUser.email === otherUserEmail)
+    )
       throw new Error('Chat já existe');
 
     set(state => ({...state, isLoading: true}));
@@ -45,7 +47,7 @@ export const userChats = create<UserContext>(set => ({
     );
     set(state => ({
       ...state,
-      chats: [newChat, ...state.chats],
+      chats: {...state.chats, [newChat.chatId]: newChat},
     }));
 
     return newChat;
@@ -60,7 +62,7 @@ export const userChats = create<UserContext>(set => ({
     );
     set(state => ({
       ...state,
-      chats,
+      chats: Object.fromEntries(chats.map(chat => [chat.chatId, chat])),
     }));
   },
 }));
