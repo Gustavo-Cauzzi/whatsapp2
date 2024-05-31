@@ -47,13 +47,12 @@ export const Home: React.FC<NavigationProps> = ({navigation}) => {
 
   useEffect(() => {
     if (!authenticated || !user) return;
-    console.log('loadChats');
     loadChats();
   }, [authenticated]);
 
   const handleLogout = () => {
     logout();
-    navigation.navigate('Login');
+    navigation.replace('Login');
   };
 
   const handleNewMessage = () => {

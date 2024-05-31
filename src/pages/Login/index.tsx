@@ -18,6 +18,7 @@ import {WaTextInput} from '../../components/WaTextInput';
 import {loadLastLoggedUser, useUser} from '../../contexts/userContext';
 import {useWaNavigation} from '../../routes/nao_rolou/stackNavigatorBuilder';
 import {NavigationProps} from '../../routes';
+import {useIsFocused} from '@react-navigation/native';
 
 const schema = object({
   email: string().required('Informe um usuário'),
@@ -35,7 +36,7 @@ const Login: React.FC<NavigationProps> = ({navigation}) => {
 
   useEffect(() => {
     if (authenticated) {
-      navigation.navigate('Home');
+      navigation.replace('Home');
       return;
     }
     loadLastLoggedUser().then(() => setIsAuthLoading(false));
