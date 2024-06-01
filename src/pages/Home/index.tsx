@@ -29,8 +29,13 @@ const newChatSchema = object({
 
 export const Home: React.FC<NavigationProps> = ({navigation}) => {
   const {user, authenticated, logout} = useUser();
-  const {chats, createChat, loadChats, isLoading} = useChats();
+  const {
+    chats,
+    isLoading,
+    actions: {createChat, loadChats, setOpenChat},
+  } = useChats();
   const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
+  const [isNewChatLoading, setIsNewChatLoading] = useState(false);
 
   const {
     control,
@@ -63,8 +68,10 @@ export const Home: React.FC<NavigationProps> = ({navigation}) => {
     if (isLoading) return;
     const {otherUserEmail} = getValues();
     try {
-      const newChat = await createChat(otherUserEmail);
-      console.log('newChat: ', newChat);
+      setIsNewChatLoading(true);
+      await createChat(otherUserEmail);
+      setIsNewChatModalOpen(false);
+      setIsNewChatLoading(false);
       reset();
     } catch (e) {
       Alert.alert('Erro', `${e}`);
@@ -72,7 +79,8 @@ export const Home: React.FC<NavigationProps> = ({navigation}) => {
   };
 
   const handleGoToChat = (chat: WaChat) => {
-    navigation.navigate('Chat', {chatId: chat.chatId});
+    setOpenChat(chat.chatId);
+    navigation.navigate('Chat');
   };
 
   return (
@@ -101,7 +109,7 @@ export const Home: React.FC<NavigationProps> = ({navigation}) => {
         show={isNewChatModalOpen}
         onDimiss={() => setIsNewChatModalOpen(false)}>
         <View className="bg-background p-4 rounded-xl">
-          <Text className="text-xl font-bold">Nova conversa:</Text>
+          <Text className="text-xl font-bold text-white">Nova conversa:</Text>
           <Controller
             control={control}
             name="otherUserEmail"
@@ -122,7 +130,7 @@ export const Home: React.FC<NavigationProps> = ({navigation}) => {
               text="Iniciar conversa"
               variant="contained"
               onPress={handleSubmit(handleCreateNewChat)}>
-              {isLoading && (
+              {isNewChatLoading && (
                 <ActivityIndicator color="#fff" className="px-[44px]" />
               )}
             </WaButton>
@@ -131,39 +139,44 @@ export const Home: React.FC<NavigationProps> = ({navigation}) => {
       </WaModal>
 
       <View>
-        <FlatList
-          data={Object.values(chats)}
-          keyExtractor={chat => chat.chatId}
-          ListEmptyComponent={() => (
-            <View className="flex-1 py-4 items-center">
-              <Text className="text-lg">Nenhuma conversa</Text>
-            </View>
-          )}
-          renderItem={({item: chat}) => (
-            <TouchableNativeFeedback onPress={() => handleGoToChat(chat)}>
-              <View className="flex-1 flex-row px-2 py-4">
-                <View className="bg-background-950 p-3 rounded-full">
-                  <FeatherIcon name="user" size={25} />
-                </View>
-
-                <View className="px-2">
-                  <View className="flex-row items-end">
-                    <Text className="text-lg text-gray-300 pr-2">
-                      {chat.otherUser.name}
-                    </Text>
-                    <Text className="text-gray-500 mb-[3px]">
-                      ({chat.otherUser.email})
-                    </Text>
+        {isLoading && !isNewChatLoading ? (
+          <ActivityIndicator className="mt-4" size={30} />
+        ) : (
+          <FlatList
+            data={Object.values(chats)}
+            keyExtractor={chat => chat.chatId}
+            ListEmptyComponent={() => (
+              <View className="flex-1 py-4 items-center">
+                <Text className="text-lg">Nenhuma conversa</Text>
+              </View>
+            )}
+            renderItem={({item: chat}) => (
+              <TouchableNativeFeedback onPress={() => handleGoToChat(chat)}>
+                <View className="flex-1 flex-row px-2 py-4">
+                  <View className="bg-background-950 p-3 rounded-full">
+                    <FeatherIcon name="user" size={25} />
                   </View>
 
-                  <Text className="pr-2 text-gray-500">
-                    {chat.messages[0]?.message ?? 'Nenhuma mensagem enviada'}
-                  </Text>
+                  <View className="px-2">
+                    <View className="flex-row items-end">
+                      <Text className="text-lg text-gray-300 pr-2">
+                        {chat.otherUser.name}
+                      </Text>
+                      <Text className="text-gray-500 mb-[3px]">
+                        ({chat.otherUser.email})
+                      </Text>
+                    </View>
+
+                    <Text className="pr-2 text-gray-500">
+                      {Object.values(chat.messages).at(-1)?.message ??
+                        'Nenhuma mensagem enviada'}
+                    </Text>
+                  </View>
                 </View>
-              </View>
-            </TouchableNativeFeedback>
-          )}
-        />
+              </TouchableNativeFeedback>
+            )}
+          />
+        )}
       </View>
     </SafeAreaView>
   );

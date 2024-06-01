@@ -31,10 +31,10 @@ export const WaTextInput: React.FC<IWaTextInput> = ({
         {...inputContainerProps}
         className={`flex-row items-center justify-between px-2 bg-background-950 rounded-xl min-w-[150px] ${actualBorderColor} border-2 ${inputContainerProps?.className}`}>
         <TextInput
-          className={`py-2 flex-1 ${inputClassName}`}
+          className={`py-2 flex-1 text-white ${inputClassName}`}
           {...props}
           placeholderTextColor={
-            error ? '#991b1b' : props.placeholderTextColor ?? '#456158'
+            error ? '#991b1b' : props.placeholderTextColor ?? '#6B7280'
           }
           onFocus={e => {
             setIsFocused(true);
