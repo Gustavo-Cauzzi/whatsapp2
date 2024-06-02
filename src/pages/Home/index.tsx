@@ -1,5 +1,5 @@
 import {yupResolver} from '@hookform/resolvers/yup';
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {Controller, useForm} from 'react-hook-form';
 import {
   ActivityIndicator,
@@ -32,7 +32,7 @@ export const Home: React.FC<NavigationProps> = ({navigation}) => {
   const {
     chats,
     isLoading,
-    actions: {createChat, loadChats, setOpenChat},
+    actions: {createChat, loadChats, setOpenChat, removeUnseenFlag},
   } = useChats();
   const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
   const [isNewChatLoading, setIsNewChatLoading] = useState(false);
@@ -78,17 +78,34 @@ export const Home: React.FC<NavigationProps> = ({navigation}) => {
     }
   };
 
-  const handleGoToChat = (chat: WaChat) => {
+  const handleGoToChat = async (chat: WaChat) => {
     setOpenChat(chat.chatId);
     navigation.navigate('Chat');
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    removeUnseenFlag(chat.chatId);
   };
+
+  const sortedChats = useMemo(() => {
+    return Object.values(chats)
+      .map(chat => ({
+        ...chat,
+        lastMessage: Object.values(chat.messages).at(-1),
+      }))
+      .sort(
+        (a, b) =>
+          (b.lastMessage?.timestamp ?? 0) - (a.lastMessage?.timestamp ?? 0),
+      );
+  }, [chats]);
 
   return (
     <SafeAreaView className="flex-1 bg-background-925">
       <View
         className="flex-row justify-between p-4 bg-background"
         style={{elevation: 10}}>
-        <Text className="text-xl text-white">Whatsapp 2</Text>
+        <View className="flex-row items-end">
+          <Text className="text-xl text-white mr-2">Whatsapp 2</Text>
+          <Text className="text-gray-500 mb-[3px]">({user?.email})</Text>
+        </View>
 
         <TouchableOpacity onPress={handleLogout}>
           <MaterialCommunityIcons name="logout" size={25} color="#128C7E" />
@@ -143,7 +160,7 @@ export const Home: React.FC<NavigationProps> = ({navigation}) => {
           <ActivityIndicator className="mt-4" size={30} />
         ) : (
           <FlatList
-            data={Object.values(chats)}
+            data={sortedChats}
             keyExtractor={chat => chat.chatId}
             ListEmptyComponent={() => (
               <View className="flex-1 py-4 items-center">
@@ -157,7 +174,7 @@ export const Home: React.FC<NavigationProps> = ({navigation}) => {
                     <FeatherIcon name="user" size={25} />
                   </View>
 
-                  <View className="px-2">
+                  <View className="px-2 flex-1">
                     <View className="flex-row items-end">
                       <Text className="text-lg text-gray-300 pr-2">
                         {chat.otherUser.name}
@@ -167,10 +184,19 @@ export const Home: React.FC<NavigationProps> = ({navigation}) => {
                       </Text>
                     </View>
 
-                    <Text className="pr-2 text-gray-500">
-                      {Object.values(chat.messages).at(-1)?.message ??
-                        'Nenhuma mensagem enviada'}
-                    </Text>
+                    <View className="justify-between flex-row items-center flex-">
+                      <Text
+                        className={`pr-2 ${
+                          chat.hasUnseenMessage ? 'text-white' : 'text-gray-500'
+                        }`}>
+                        {Object.values(chat.messages).at(-1)?.message ??
+                          'Nenhuma mensagem enviada'}
+                      </Text>
+
+                      {chat.hasUnseenMessage && (
+                        <View className="w-1.5 h-1.5 rounded-full bg-white" />
+                      )}
+                    </View>
                   </View>
                 </View>
               </TouchableNativeFeedback>

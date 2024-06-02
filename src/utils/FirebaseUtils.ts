@@ -16,6 +16,7 @@ export const snapshotToOne = <T>(
 export const snapshotGroupedBy =
   <TEntity, TGrouper extends string | number | symbol>(
     groupedBy: (value: TEntity) => TGrouper,
+    filter?: (value: TEntity) => any,
   ) =>
   (
     querySnapshot: void | FirebaseFirestoreTypes.QuerySnapshot<FirebaseFirestoreTypes.DocumentData>,
@@ -24,6 +25,7 @@ export const snapshotGroupedBy =
     const map = {} as Record<TGrouper, TEntity[]>;
     querySnapshot.forEach(doc => {
       const entity = doc.data() as TEntity;
+      if (filter && !filter(entity)) return;
       const key = groupedBy(entity);
       if (key in map) map[key].push(entity);
       else map[key] = [entity];

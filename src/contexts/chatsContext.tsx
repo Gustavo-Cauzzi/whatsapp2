@@ -15,6 +15,7 @@ import {useUser} from './userContext';
 export interface WaChat extends Chat {
   otherUser: User;
   messages: Record<string, Message>;
+  hasUnseenMessage?: boolean;
 }
 
 interface ISendMessageParams {
@@ -26,11 +27,14 @@ interface UserContext {
   chats: Record<string, WaChat>;
   isLoading: boolean;
   openChatId?: string;
+  lastTimeFetched?: number;
   actions: {
     setOpenChat: (chatId?: string) => any;
     createChat: (otherUserEmail: string) => Promise<WaChat>;
     loadChats: () => any;
     sendMessage: (params: ISendMessageParams) => any;
+    updateChats: () => any;
+    removeUnseenFlag: (chatId: string) => any;
   };
 }
 
@@ -76,6 +80,7 @@ export const useChats = create<UserContext>(set => ({
       set(state => ({
         ...state,
         chats: Object.fromEntries(chats.map(chat => [chat.chatId, chat])),
+        lastTimeFetched: Date.now(),
       }));
     },
     setOpenChat: chatId => set(state => ({...state, openChatId: chatId})),
@@ -91,19 +96,49 @@ export const useChats = create<UserContext>(set => ({
         chats: {...chats, [chatId]: chatToEdit},
       }));
     },
+    async updateChats() {
+      const newMessagesByChatId = await getNewMessages();
+      console.log('newMessagesByChatId: ', newMessagesByChatId);
+      const {chats} = useChats.getState();
+      const newChatsIds = Object.keys(newMessagesByChatId).filter(
+        chatId => !(chatId in chats),
+      );
+      const newChats = await getChatsByIds([...new Set(newChatsIds)]);
+      const mergedChats = {
+        ...chats,
+        ...newChats.reduce(
+          (acc, curr) => ({...acc, [curr.chatId]: curr}),
+          {} as typeof chats,
+        ),
+      };
+      Object.entries(newMessagesByChatId).forEach(([chatId, messages]) => {
+        messages.forEach(message => {
+          mergedChats[chatId].messages[message.messageId] = message;
+        });
+        mergedChats[chatId].hasUnseenMessage = true;
+      });
+      set(state => ({
+        ...state,
+        chats: mergedChats,
+        lastTimeFetched: Date.now(),
+      }));
+    },
+    removeUnseenFlag(chatId) {
+      const {chats} = useChats.getState();
+      chats[chatId].hasUnseenMessage = false;
+      set(state => ({...state, chats}));
+    },
   },
 }));
+
+const getOtherUser = (chat: Chat) =>
+  chat.creatorUserId === useUser.getState().user?.uid
+    ? chat.recipientUserId
+    : chat.creatorUserId;
 
 const getChatsOfCurrentUser = async (
   currentUserId: string,
 ): Promise<WaChat[]> => {
-  const getOtherUser = (chat: Chat) =>
-    chat.creatorUserId === currentUserId
-      ? chat.recipientUserId
-      : chat.creatorUserId;
-  console.log('Filter: ', Filter);
-
-  console.log('currentUserId: ', currentUserId);
   const chats = await Promise.all(
     [`creatorUserId`, `recipientUserId`].map(field =>
       firestore()
@@ -117,8 +152,6 @@ const getChatsOfCurrentUser = async (
   if (!chats.length) return [];
 
   const allOtherUsers = [...new Set(chats.map(getOtherUser))];
-
-  console.log('allOtherUsers: ', allOtherUsers);
 
   const [usersById, messagesByChatId] = await Promise.all([
     firestore()
@@ -203,4 +236,50 @@ const sendMessage = async ({chatId, message}: ISendMessageParams) => {
       senderId: user.uid,
     } as Message)
     .then(doc => doc.get().then(doc => doc.data() as Message));
+};
+
+const getNewMessages = async () => {
+  const {lastTimeFetched, chats} = useChats.getState();
+  console.log('Object.keys(chats): ', Object.keys(chats));
+  return firestore()
+    .collection('Messages')
+    .where(`timestamp`, `>`, lastTimeFetched ?? 0)
+    .get()
+    .then(
+      snapshotGroupedBy<Message, string>(
+        message => message.chatId,
+        message => message.chatId in chats,
+      ),
+    )
+    .then(sortMessagesAsync);
+};
+
+const getChatsByIds = async (ids: string[]) => {
+  console.log('ids: ', ids);
+  if (!ids.length) return [];
+
+  const chats = await firestore()
+    .collection('Chats')
+    .where(`chatId`, `in`, ids)
+    .get()
+    .then(snapshotToArray<Chat>);
+
+  if (!chats.length) return [];
+
+  const allOtherUsers = [...new Set(chats.map(getOtherUser))];
+
+  const usersById = await firestore()
+    .collection('Users')
+    .where('id', 'in', allOtherUsers)
+    .get()
+    .then(snapshotToMap<User, string>(user => user.id));
+
+  return chats.map(
+    chat =>
+      ({
+        ...chat,
+        otherUser: usersById[getOtherUser(chat)],
+        messages: {},
+      } as WaChat),
+  );
 };
