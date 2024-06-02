@@ -60,7 +60,7 @@ export const Home: React.FC<NavigationProps> = ({navigation}) => {
     navigation.replace('Login');
   };
 
-  const handleNewMessage = () => {
+  const handleNewChat = () => {
     setIsNewChatModalOpen(true);
   };
 
@@ -71,10 +71,11 @@ export const Home: React.FC<NavigationProps> = ({navigation}) => {
       setIsNewChatLoading(true);
       await createChat(otherUserEmail);
       setIsNewChatModalOpen(false);
-      setIsNewChatLoading(false);
       reset();
     } catch (e) {
       Alert.alert('Erro', `${e}`);
+    } finally {
+      setIsNewChatLoading(false);
     }
   };
 
@@ -95,8 +96,6 @@ export const Home: React.FC<NavigationProps> = ({navigation}) => {
       );
   }, [chats]);
 
-  console.log('chats: ', user?.email, sortedChats);
-
   return (
     <SafeAreaView className="flex-1 bg-background-925">
       <View
@@ -109,16 +108,6 @@ export const Home: React.FC<NavigationProps> = ({navigation}) => {
 
         <TouchableOpacity onPress={handleLogout}>
           <MaterialCommunityIcons name="logout" size={25} color="#128C7E" />
-        </TouchableOpacity>
-      </View>
-
-      <View className="absolute bottom-4 right-4 rounded-full bg-teal-green z-1">
-        <TouchableOpacity onPress={handleNewMessage} className="p-4">
-          <MaterialCommunityIcons
-            name="message-plus-outline"
-            size={25}
-            color="#fff"
-          />
         </TouchableOpacity>
       </View>
 
@@ -156,6 +145,18 @@ export const Home: React.FC<NavigationProps> = ({navigation}) => {
       </WaModal>
 
       <View className="flex-1">
+        <View
+          className="absolute bottom-4 right-4 rounded-full bg-teal-green z-10"
+          style={{elevation: 10}}>
+          <TouchableOpacity onPress={handleNewChat} className="p-4">
+            <MaterialCommunityIcons
+              name="message-plus-outline"
+              size={25}
+              color="#fff"
+            />
+          </TouchableOpacity>
+        </View>
+
         {isLoading && !isNewChatLoading ? (
           <ActivityIndicator className="mt-4" size={30} />
         ) : (

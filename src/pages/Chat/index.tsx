@@ -35,7 +35,6 @@ export const Chat: React.FC<NavigationProps> = ({navigation, route}) => {
   });
 
   useEffect(() => {
-    console.log('messagesLength: ', messagesLength);
     if (chat) removeUnseenFlag(chat.chatId);
   }, [messagesLength]);
 

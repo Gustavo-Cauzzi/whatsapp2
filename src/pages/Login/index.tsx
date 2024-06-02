@@ -31,7 +31,7 @@ const Login: React.FC<NavigationProps> = ({navigation}) => {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isActionsEnabled, setIsActionsEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const {setUser, authenticated, signUp} = useUser();
+  const {setUser, authenticated, signUp, login} = useUser();
   const [isAuthLoading, setIsAuthLoading] = useState(authenticated);
 
   useEffect(() => {
@@ -67,10 +67,7 @@ const Login: React.FC<NavigationProps> = ({navigation}) => {
     setIsLoading(true);
     const {email, password} = getValues();
     try {
-      const {user} = await firebase
-        .auth()
-        .signInWithEmailAndPassword(email, password);
-      setUser(user);
+      await login({email, password});
     } catch (e) {
       Alert.alert('Erro', String(e));
     }

@@ -11,6 +11,7 @@ import {
   snapshotToOne,
 } from '../utils/FirebaseUtils';
 import {useUser} from './userContext';
+import {sendFCMNotification} from '../services/fcmApi';
 
 export interface WaChat extends Chat {
   otherUser: User;
@@ -23,7 +24,7 @@ interface ISendMessageParams {
   chatId: string;
 }
 
-interface UserContext {
+interface ChatContext {
   chats: Record<string, WaChat>;
   isLoading: boolean;
   openChatId?: string;
@@ -33,12 +34,12 @@ interface UserContext {
     createChat: (otherUserEmail: string) => Promise<WaChat>;
     loadChats: () => any;
     sendMessage: (params: ISendMessageParams) => any;
-    updateChats: () => any;
+    updateChats: () => Promise<any>;
     removeUnseenFlag: (chatId: string) => any;
   };
 }
 
-export const useChats = create<UserContext>(set => ({
+export const useChats = create<ChatContext>(set => ({
   chats: {},
   isLoading: false,
   openChatId: undefined,
@@ -95,10 +96,10 @@ export const useChats = create<UserContext>(set => ({
         chats: {...chats, [chatId]: chatToEdit},
       }));
     },
-    async updateChats() {
+    updateChats: async () => {
       const userId = useUser.getState().user?.uid;
-      const newMessagesByChatId = await getNewMessages();
       const {chats} = useChats.getState();
+      const newMessagesByChatId = await getNewMessages();
       const newChatsIds = Object.keys(newMessagesByChatId).filter(
         chatId => !(chatId in chats),
       );
@@ -116,12 +117,14 @@ export const useChats = create<UserContext>(set => ({
           {} as typeof chats,
         ),
       };
-      Object.entries(newMessagesByChatId).forEach(([chatId, messages]) => {
-        messages.forEach(message => {
-          mergedChats[chatId].messages[message.messageId] = message;
+      Object.entries(newMessagesByChatId)
+        .filter(([chatId]) => chatId in mergedChats)
+        .forEach(([chatId, messages]) => {
+          messages.forEach(message => {
+            mergedChats[chatId].messages[message.messageId] = message;
+          });
+          mergedChats[chatId].hasUnseenMessage = true;
         });
-        mergedChats[chatId].hasUnseenMessage = true;
-      });
       set(state => ({
         ...state,
         chats: mergedChats,
@@ -224,8 +227,10 @@ const sortMessagesAsync = async (
 
 const sendMessage = async ({chatId, message}: ISendMessageParams) => {
   const {user} = useUser.getState();
+  const {chats} = useChats.getState();
   if (!user?.uid) throw new Error(`Usuário não encontrado`);
-  return await firestore()
+
+  const newMessage = await firestore()
     .collection('Messages')
     .add({
       chatId,
@@ -235,6 +240,61 @@ const sendMessage = async ({chatId, message}: ISendMessageParams) => {
       senderId: user.uid,
     } as Message)
     .then(doc => doc.get().then(doc => doc.data() as Message));
+
+  const otherUser = chats[newMessage.chatId].otherUser;
+  if (otherUser.token)
+    sendFCMNotification({
+      body: newMessage.message,
+      title: `Nova mensagem de ${otherUser.name}`,
+      to: otherUser.token,
+    });
+
+  return newMessage;
+};
+
+const getNewMessages = async () => {
+  const {lastTimeFetched, chats} = useChats.getState();
+  const userId = useUser.getState().user?.uid;
+  return firestore()
+    .collection('Messages')
+    .where(`timestamp`, `>`, lastTimeFetched ?? 0)
+    .get()
+    .then(
+      snapshotGroupedBy<Message, string>(
+        message => message.chatId,
+        message => message.senderId !== userId,
+      ),
+    )
+    .then(sortMessagesAsync);
+};
+
+const getChatsByIds = async (ids: string[]) => {
+  if (!ids.length) return [];
+
+  const chats = await firestore()
+    .collection('Chats')
+    .where(`chatId`, `in`, ids)
+    .get()
+    .then(snapshotToArray<Chat>);
+
+  if (!chats.length) return [];
+
+  const allOtherUsers = [...new Set(chats.map(getOtherUser))];
+
+  const usersById = await firestore()
+    .collection('Users')
+    .where('id', 'in', allOtherUsers)
+    .get()
+    .then(snapshotToMap<User, string>(user => user.id));
+
+  return chats.map(
+    chat =>
+      ({
+        ...chat,
+        otherUser: usersById[getOtherUser(chat)],
+        messages: {},
+      } as WaChat),
+  );
 };
 
 const getNewMessages = async () => {
