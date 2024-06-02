@@ -32,7 +32,7 @@ export const Home: React.FC<NavigationProps> = ({navigation}) => {
   const {
     chats,
     isLoading,
-    actions: {createChat, loadChats, setOpenChat, removeUnseenFlag},
+    actions: {createChat, loadChats, setOpenChat},
   } = useChats();
   const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
   const [isNewChatLoading, setIsNewChatLoading] = useState(false);
@@ -81,8 +81,6 @@ export const Home: React.FC<NavigationProps> = ({navigation}) => {
   const handleGoToChat = async (chat: WaChat) => {
     setOpenChat(chat.chatId);
     navigation.navigate('Chat');
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    removeUnseenFlag(chat.chatId);
   };
 
   const sortedChats = useMemo(() => {
@@ -96,6 +94,8 @@ export const Home: React.FC<NavigationProps> = ({navigation}) => {
           (b.lastMessage?.timestamp ?? 0) - (a.lastMessage?.timestamp ?? 0),
       );
   }, [chats]);
+
+  console.log('chats: ', user?.email, sortedChats);
 
   return (
     <SafeAreaView className="flex-1 bg-background-925">
@@ -155,7 +155,7 @@ export const Home: React.FC<NavigationProps> = ({navigation}) => {
         </View>
       </WaModal>
 
-      <View>
+      <View className="flex-1">
         {isLoading && !isNewChatLoading ? (
           <ActivityIndicator className="mt-4" size={30} />
         ) : (
@@ -168,38 +168,42 @@ export const Home: React.FC<NavigationProps> = ({navigation}) => {
               </View>
             )}
             renderItem={({item: chat}) => (
-              <TouchableNativeFeedback onPress={() => handleGoToChat(chat)}>
-                <View className="flex-1 flex-row px-2 py-4">
-                  <View className="bg-background-950 p-3 rounded-full">
-                    <FeatherIcon name="user" size={25} />
-                  </View>
-
-                  <View className="px-2 flex-1">
-                    <View className="flex-row items-end">
-                      <Text className="text-lg text-gray-300 pr-2">
-                        {chat.otherUser.name}
-                      </Text>
-                      <Text className="text-gray-500 mb-[3px]">
-                        ({chat.otherUser.email})
-                      </Text>
+              <View className="h-20">
+                <TouchableNativeFeedback onPress={() => handleGoToChat(chat)}>
+                  <View className="flex-1 flex-row px-2 py-4">
+                    <View className="bg-background-950 p-3 rounded-full">
+                      <FeatherIcon name="user" size={25} />
                     </View>
 
-                    <View className="justify-between flex-row items-center flex-">
-                      <Text
-                        className={`pr-2 ${
-                          chat.hasUnseenMessage ? 'text-white' : 'text-gray-500'
-                        }`}>
-                        {Object.values(chat.messages).at(-1)?.message ??
-                          'Nenhuma mensagem enviada'}
-                      </Text>
+                    <View className="px-2 flex-1">
+                      <View className="flex-row items-end">
+                        <Text className="text-lg text-gray-300 pr-2">
+                          {chat.otherUser.name}
+                        </Text>
+                        <Text className="text-gray-500 mb-[3px]">
+                          ({chat.otherUser.email})
+                        </Text>
+                      </View>
 
-                      {chat.hasUnseenMessage && (
-                        <View className="w-1.5 h-1.5 rounded-full bg-white" />
-                      )}
+                      <View className="justify-between flex-row items-center flex-">
+                        <Text
+                          className={`pr-2 ${
+                            chat.hasUnseenMessage
+                              ? 'text-white'
+                              : 'text-gray-500'
+                          }`}>
+                          {Object.values(chat.messages).at(-1)?.message ??
+                            'Nenhuma mensagem enviada'}
+                        </Text>
+
+                        {chat.hasUnseenMessage && (
+                          <View className="w-1.5 h-1.5 rounded-full bg-white" />
+                        )}
+                      </View>
                     </View>
                   </View>
-                </View>
-              </TouchableNativeFeedback>
+                </TouchableNativeFeedback>
+              </View>
             )}
           />
         )}

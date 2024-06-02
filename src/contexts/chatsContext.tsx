@@ -76,7 +76,6 @@ export const useChats = create<UserContext>(set => ({
       const chats = await getChatsOfCurrentUser(user.uid).finally(() =>
         set(state => ({...state, isLoading: false})),
       );
-      console.log('chats: ', chats);
       set(state => ({
         ...state,
         chats: Object.fromEntries(chats.map(chat => [chat.chatId, chat])),
@@ -97,13 +96,19 @@ export const useChats = create<UserContext>(set => ({
       }));
     },
     async updateChats() {
+      const userId = useUser.getState().user?.uid;
       const newMessagesByChatId = await getNewMessages();
-      console.log('newMessagesByChatId: ', newMessagesByChatId);
       const {chats} = useChats.getState();
       const newChatsIds = Object.keys(newMessagesByChatId).filter(
         chatId => !(chatId in chats),
       );
-      const newChats = await getChatsByIds([...new Set(newChatsIds)]);
+      const newChats = await getChatsByIds([...new Set(newChatsIds)]).then(
+        chats =>
+          chats.filter(
+            chat =>
+              chat.creatorUserId === userId || chat.recipientUserId === userId,
+          ),
+      );
       const mergedChats = {
         ...chats,
         ...newChats.reduce(
@@ -126,7 +131,7 @@ export const useChats = create<UserContext>(set => ({
     removeUnseenFlag(chatId) {
       const {chats} = useChats.getState();
       chats[chatId].hasUnseenMessage = false;
-      set(state => ({...state, chats}));
+      set(state => ({...state, chats: {...chats}}));
     },
   },
 }));
@@ -171,9 +176,6 @@ const getChatsOfCurrentUser = async (
       .then(sortMessagesAsync),
   ]);
 
-  console.log('usersById: ', usersById);
-  console.log('messagesByChatId: ', messagesByChatId);
-
   return chats.map(chat => ({
     ...chat,
     otherUser: usersById[getOtherUser(chat)],
@@ -187,7 +189,6 @@ const getChatsOfCurrentUser = async (
 
 const createChat = async (otherUserEmail: string): Promise<WaChat> => {
   const {user} = useUser.getState();
-  console.log('user: ', user);
   if (!user) throw new Error('User not found');
 
   const otherUser = await firestore()
@@ -197,7 +198,6 @@ const createChat = async (otherUserEmail: string): Promise<WaChat> => {
     .get()
     .then(snapshotToOne<User>);
 
-  console.log('otherUser: ', otherUser);
   if (!otherUser)
     throw new Error(`Usuário de email ${otherUserEmail} não encontrado`);
 
@@ -206,7 +206,6 @@ const createChat = async (otherUserEmail: string): Promise<WaChat> => {
     creatorUserId: user.uid,
     recipientUserId: otherUser.id,
   } as Chat;
-  console.log('newChat: ', newChat);
   await firestore().collection('Chats').add(newChat);
 
   return {...newChat, otherUser, messages: {}};
@@ -240,7 +239,7 @@ const sendMessage = async ({chatId, message}: ISendMessageParams) => {
 
 const getNewMessages = async () => {
   const {lastTimeFetched, chats} = useChats.getState();
-  console.log('Object.keys(chats): ', Object.keys(chats));
+  const userId = useUser.getState().user?.uid;
   return firestore()
     .collection('Messages')
     .where(`timestamp`, `>`, lastTimeFetched ?? 0)
@@ -248,16 +247,16 @@ const getNewMessages = async () => {
     .then(
       snapshotGroupedBy<Message, string>(
         message => message.chatId,
-        message => message.chatId in chats,
+        message => message.senderId !== userId,
       ),
     )
     .then(sortMessagesAsync);
 };
 
 const getChatsByIds = async (ids: string[]) => {
-  console.log('ids: ', ids);
   if (!ids.length) return [];
 
+  console.log('ids: ', ids);
   const chats = await firestore()
     .collection('Chats')
     .where(`chatId`, `in`, ids)

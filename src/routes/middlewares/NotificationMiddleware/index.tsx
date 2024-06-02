@@ -10,7 +10,6 @@ export const NotificationMiddleware: React.FC<PropsWithChildren> = ({
 
   useEffect(() => {
     const interval = setInterval(() => {
-      console.log('updateChats');
       updateChats();
     }, 5000);
 

@@ -1,4 +1,4 @@
-import React, {RefAttributes, useRef, useState} from 'react';
+import React, {RefAttributes, useEffect, useRef, useState} from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -16,12 +16,17 @@ import {useChats} from '../../contexts/chatsContext';
 import {useUser} from '../../contexts/userContext';
 
 export const Chat: React.FC<NavigationProps> = ({navigation, route}) => {
-  const chat = useChats(state =>
-    state.openChatId ? state.chats[state.openChatId] : undefined,
+  const chat = useChats(state => state.chats[state.openChatId!]);
+  const messagesLength = useChats(
+    // Provoca um rerender quando a quantidade muda. Zustand parece se perder nas referências e não percebe que um array mudou de tamanho sozinho (???)
+    state =>
+      Object.values(state.chats[state.openChatId!]?.messages ?? {})?.length,
   );
   const userId = useUser(state => state.user?.uid);
   const [isSendingMessage, setIsSendingMessage] = useState(false);
-  const {setOpenChat, sendMessage} = useChats(state => state.actions);
+  const {setOpenChat, sendMessage, removeUnseenFlag} = useChats(
+    state => state.actions,
+  );
 
   const flatListRef = useRef<FlatList>(null);
 
@@ -29,8 +34,13 @@ export const Chat: React.FC<NavigationProps> = ({navigation, route}) => {
     defaultValues: {message: ''},
   });
 
+  useEffect(() => {
+    console.log('messagesLength: ', messagesLength);
+    if (chat) removeUnseenFlag(chat.chatId);
+  }, [messagesLength]);
+
   if (!chat) {
-    Alert.alert('Erro', 'Chat não encontrado');
+    console.error('Erro', 'Chat não encontrado');
     navigation.goBack();
     return <></>;
   }
