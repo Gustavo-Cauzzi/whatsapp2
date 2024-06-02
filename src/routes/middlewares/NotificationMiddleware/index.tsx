@@ -1,8 +1,7 @@
 import {PropsWithChildren, useEffect} from 'react';
 import {useChats} from '../../../contexts/chatsContext';
-import messaging from '@react-native-firebase/messaging';
 
-import {PermissionsAndroid, Platform} from 'react-native';
+import {PermissionsAndroid} from 'react-native';
 
 export const NotificationMiddleware: React.FC<PropsWithChildren> = ({
   children,
