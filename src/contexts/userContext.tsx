@@ -6,6 +6,7 @@ import messaging from '@react-native-firebase/messaging';
 import {User} from '../types/user';
 import {snapshotToOne} from '../utils/FirebaseUtils';
 import {PermissionsAndroid} from 'react-native';
+import {AsyncStorageKeys} from '../utils/constants/AsyncStorageKeys';
 
 interface Credentials {
   email: string;
@@ -20,8 +21,6 @@ interface UserContext {
   signUp: (params: Credentials) => Promise<any>;
   login: (params: Credentials) => Promise<any>;
 }
-
-const LAST_LOGGED_USER = '@whats2/last_logged_user';
 
 export const useUser = create<UserContext>(set => ({
   authenticated: false,
@@ -52,7 +51,9 @@ export const useUser = create<UserContext>(set => ({
 }));
 
 export const loadLastLoggedUser = async () => {
-  const storedUser = await AsyncStorage.getItem(LAST_LOGGED_USER);
+  const storedUser = await AsyncStorage.getItem(
+    AsyncStorageKeys.LAST_LOGGED_USER,
+  );
   if (!storedUser) return;
   const user = JSON.parse(storedUser) as FirebaseAuthTypes.User;
   return user;
@@ -88,11 +89,11 @@ const linkFCMToUser = async (user: FirebaseAuthTypes.User) => {
 };
 
 const saveUser = (user: FirebaseAuthTypes.User) => {
-  AsyncStorage.setItem(LAST_LOGGED_USER, JSON.stringify(user));
+  AsyncStorage.setItem(AsyncStorageKeys.LAST_LOGGED_USER, JSON.stringify(user));
 };
 
 const cleanUser = () => {
-  AsyncStorage.removeItem(LAST_LOGGED_USER);
+  AsyncStorage.removeItem(AsyncStorageKeys.LAST_LOGGED_USER);
 };
 
 const login = ({email, password}: Credentials) => {

@@ -5,7 +5,8 @@ import {Chat} from '../pages/Chat';
 import {Home} from '../pages/Home';
 import Login from '../pages/Login';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
-import {NotificationMiddleware} from './middlewares/NotificationMiddleware';
+import {NotificationActions} from './ActionWrappers/Notification';
+import {BackgroundActions} from './ActionWrappers/BackgroundActions';
 
 const Stack = createStackNavigator();
 
@@ -17,21 +18,22 @@ export type NavigationProps = NativeStackScreenProps<
 
 export const Routes = () => {
   return (
-    <NotificationMiddleware>
-      <View className="flex-1">
-        <NavigationContainer>
-          <Stack.Navigator
-            screenOptions={{
-              headerShown: false,
-            }}
-            initialRouteName="Login">
-            <Stack.Screen name="Login" component={Login} />
-            <Stack.Screen name="Home" component={Home} />
-            {/* @ts-ignore */}
-            <Stack.Screen name="Chat" component={Chat} />
-          </Stack.Navigator>
-        </NavigationContainer>
-      </View>
-    </NotificationMiddleware>
+    <BackgroundActions>
+      <NotificationActions>
+        <View className="flex-1">
+          <NavigationContainer>
+            <Stack.Navigator
+              screenOptions={{
+                headerShown: false,
+              }}
+              initialRouteName="Login">
+              <Stack.Screen name="Login" component={Login} />
+              <Stack.Screen name="Home" component={Home} />
+              <Stack.Screen name="Chat" component={Chat} />
+            </Stack.Navigator>
+          </NavigationContainer>
+        </View>
+      </NotificationActions>
+    </BackgroundActions>
   );
 };

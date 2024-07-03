@@ -3,7 +3,7 @@ import {useChats} from '../../../contexts/chatsContext';
 
 import {PermissionsAndroid} from 'react-native';
 
-export const NotificationMiddleware: React.FC<PropsWithChildren> = ({
+export const NotificationActions: React.FC<PropsWithChildren> = ({
   children,
 }) => {
   const {
@@ -18,6 +18,7 @@ export const NotificationMiddleware: React.FC<PropsWithChildren> = ({
     const interval = setInterval(() => {
       updateChats();
     }, 5000);
+
     return () => clearInterval(interval);
   }, []);
 
