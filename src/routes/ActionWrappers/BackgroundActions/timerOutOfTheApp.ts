@@ -15,7 +15,7 @@ const possibleIrritatingMessages: ((time: number) => string)[] = [
   timeOutOfTheApp =>
     `Você está a ${timeOutOfTheApp} segundos sem usar o Whatsapp 2. Volte imediatamente!`,
   timeOutOfTheApp =>
-    `Seus amigos estão sentido sua falta! Faz ${timeOutOfTheApp} segundos já!`,
+    `Seus amigos está sentido sua falta! Faz ${timeOutOfTheApp} segundos já!`,
   timeOutOfTheApp => `Faz ${timeOutOfTheApp} segundos que você não me abre`,
   timeOutOfTheApp =>
     `Saudades de ${timeOutOfTheApp} segundos atrás, era tão legal com você perdendo seu tempo no aplicativo`,
@@ -30,22 +30,21 @@ export const timeOutOfTheAppTask = async (_taskDataArguments: any) => {
   await new Promise(async _whyResolveAPromiseIfItNeverEndsMuaHaHaHa => {
     let timeOutOfTheApp = 0,
       messageTemplate = possibleIrritatingMessages[0];
-    for (let i = 0; BackgroundService.isRunning(); i++) {
+
+    setInterval(() => {
       if (AppState.currentState !== 'background') {
         if (timeOutOfTheApp) {
           backgroundLog('Salvando timeOutOfTheApp: ', timeOutOfTheApp);
           AsyncStorage.setItem(
-            AsyncStorageKeys.TIMER_SINCE_YOU_WAS_GONE,
+            AsyncStorageKeys.TIMER_SINCE_YOU_WERE_GONE,
             String(timeOutOfTheApp),
           );
           timeOutOfTheApp = 0;
         }
 
-        await new Promise(resolve => setTimeout(resolve, 5000));
-        continue;
+        return;
       }
 
-      await new Promise(resolve => setTimeout(resolve, 1000));
       timeOutOfTheApp += 1;
       backgroundLog('timeOutOfTheApp: ', timeOutOfTheApp);
       if (
@@ -57,9 +56,10 @@ export const timeOutOfTheAppTask = async (_taskDataArguments: any) => {
             Math.floor(Math.random() * possibleIrritatingMessages.length)
           ];
       }
-      await BackgroundService.updateNotification({
+
+      BackgroundService.updateNotification({
         taskDesc: messageTemplate(timeOutOfTheApp),
       });
-    }
+    }, 1000);
   });
 };

@@ -13,11 +13,11 @@ export const OutOfTheAppDialog: React.FC = () => {
     const subscription = AppState.addEventListener('focus', () => {
       setTimeout(async () => {
         const storedTimeOutOfTheApp = await AsyncStorage.getItem(
-          AsyncStorageKeys.TIMER_SINCE_YOU_WAS_GONE,
+          AsyncStorageKeys.TIMER_SINCE_YOU_WERE_GONE,
         );
-        if (storedTimeOutOfTheApp) {
+        if (Number(storedTimeOutOfTheApp) > 10) {
           setTimeOutOfTheApp(Number(storedTimeOutOfTheApp));
-          AsyncStorage.removeItem(AsyncStorageKeys.TIMER_SINCE_YOU_WAS_GONE);
+          AsyncStorage.removeItem(AsyncStorageKeys.TIMER_SINCE_YOU_WERE_GONE);
         }
       }, 1500);
     });

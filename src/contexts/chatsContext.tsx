@@ -11,7 +11,7 @@ import {
   snapshotToOne,
 } from '../utils/FirebaseUtils';
 import {useUser} from './userContext';
-import {sendFCMNotification} from '../services/fcmApi';
+import {sendNotification} from './notificationContext';
 
 export interface WaChat extends Chat {
   otherUser: User;
@@ -26,6 +26,7 @@ interface ISendMessageParams {
 
 interface ChatContext {
   chats: Record<string, WaChat>;
+  initialLoadExecuted: boolean;
   isLoading: boolean;
   openChatId?: string;
   lastTimeFetched?: number;
@@ -40,6 +41,7 @@ interface ChatContext {
 }
 
 export const useChats = create<ChatContext>(set => ({
+  initialLoadExecuted: false,
   chats: {},
   isLoading: false,
   openChatId: undefined,
@@ -81,9 +83,13 @@ export const useChats = create<ChatContext>(set => ({
         ...state,
         chats: Object.fromEntries(chats.map(chat => [chat.chatId, chat])),
         lastTimeFetched: Date.now(),
+        initialLoadExecuted: true,
       }));
     },
-    setOpenChat: chatId => set(state => ({...state, openChatId: chatId})),
+    setOpenChat: chatId => {
+      console.log('chatId: ', chatId);
+      set(state => ({...state, openChatId: chatId}));
+    },
     async sendMessage({chatId, message}) {
       set(state => ({...state, isLoading: true}));
       const newMessage = await sendMessage({chatId, message});
@@ -211,6 +217,25 @@ const createChat = async (otherUserEmail: string): Promise<WaChat> => {
   } as Chat;
   await firestore().collection('Chats').add(newChat);
 
+  console.log('newChat: ', newChat);
+  if (otherUser.token) {
+    console.log('otherUser.token: ', otherUser.token);
+    sendNotification({
+      title: `Nova conversa: ${user.email}`,
+      message: `Uma nova conversa foi iniciada vinda de ${user.email}`,
+      to: otherUser.token,
+      data: {
+        channel: 'new-chat',
+        data: {
+          chatId: newChat.chatId,
+          fromUserId: user?.uid,
+          toUserId: otherUser.id,
+          toUserEmail: otherUser.email,
+        },
+      },
+    });
+  }
+
   return {...newChat, otherUser, messages: {}};
 };
 
@@ -243,10 +268,19 @@ const sendMessage = async ({chatId, message}: ISendMessageParams) => {
 
   const otherUser = chats[newMessage.chatId].otherUser;
   if (otherUser.token)
-    sendFCMNotification({
-      body: newMessage.message,
-      title: `Nova mensagem de ${otherUser.name}`,
+    sendNotification({
+      title: `Nova mensagem de ${user.email}`,
+      message: newMessage.message,
       to: otherUser.token,
+      data: {
+        channel: 'new-message',
+        data: {
+          chatId,
+          fromUserId: user?.uid,
+          toUserId: otherUser.id,
+          toUserEmail: otherUser.email,
+        },
+      },
     });
 
   return newMessage;

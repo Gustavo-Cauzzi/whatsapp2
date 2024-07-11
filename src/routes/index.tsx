@@ -18,10 +18,10 @@ export type NavigationProps = NativeStackScreenProps<
 
 export const Routes = () => {
   return (
-    <BackgroundActions>
-      <NotificationActions>
-        <View className="flex-1">
-          <NavigationContainer>
+    <View className="flex-1">
+      <NavigationContainer>
+        <BackgroundActions>
+          <NotificationActions>
             <Stack.Navigator
               screenOptions={{
                 headerShown: false,
@@ -31,9 +31,9 @@ export const Routes = () => {
               <Stack.Screen name="Home" component={Home} />
               <Stack.Screen name="Chat" component={Chat} />
             </Stack.Navigator>
-          </NavigationContainer>
-        </View>
-      </NotificationActions>
-    </BackgroundActions>
+          </NotificationActions>
+        </BackgroundActions>
+      </NavigationContainer>
+    </View>
   );
 };
